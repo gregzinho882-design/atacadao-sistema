@@ -305,9 +305,9 @@ export default function Estoque() {
             <Card key={item.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors shadow-sm">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  <div className="bg-gray-100 dark:bg-gray-800 p-6 flex flex-col justify-center items-center md:w-48 border-b md:border-b-0 md:border-r-2 border-dashed">
+                  <div className="bg-gray-100 dark:bg-gray-800 p-6 flex flex-col justify-center items-center md:w-56 shrink-0 border-b md:border-b-0 md:border-r-2 border-dashed">
                     <MapPin className="h-8 w-8 text-primary mb-2" />
-                    <Badge variant="outline" className="text-lg px-3 py-1 font-mono font-bold bg-white dark:bg-gray-900 border-2">
+                    <Badge variant="outline" className="text-base px-3 py-1 font-mono font-bold bg-white dark:bg-gray-900 border-2 text-center whitespace-normal break-words max-w-full">
                       {item.location}
                     </Badge>
                   </div>
