@@ -1,3 +1,4 @@
+import path from "path";
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -37,12 +38,20 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.COOKIE_SECURE === "true",
       maxAge: 24 * 60 * 60 * 1000,
     },
   }),
 );
 
 app.use("/api", router);
+
+if (process.env.NODE_ENV === "production") {
+  const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), "public");
+  app.use(express.static(staticDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(staticDir, "index.html"));
+  });
+}
 
 export default app;

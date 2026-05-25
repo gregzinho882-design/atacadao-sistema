@@ -99,7 +99,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* ── Mobile Top Header ── */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground shadow-md">
-        <img src="/logo-atacadao.png" alt="Atacadão" className="h-8 object-contain brightness-0 invert" />
+        <img src="/logo-atacadao.png" alt="Atacadão" className="h-8 object-contain" />
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-primary-foreground/90">{user?.username}</span>
           <div className="h-8 w-8 rounded-full bg-white text-primary flex items-center justify-center font-bold text-sm">

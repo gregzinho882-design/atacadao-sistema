@@ -1,45 +1,69 @@
-# [Project name]
+# Atacadão Frios — Sistema de Armazém
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Sistema web para gerenciamento de estoque e códigos de balança do Atacadão Frios. Funciona no PC e no celular (PWA instalável).
 
-## Run & Operate
+## Rodar no seu PC (Docker — recomendado)
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+**Pré-requisito:** ter o [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado.
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/gregzinho882-design/atacadao-sistema.git
+cd atacadao-sistema
+
+# 2. Copie e edite as variáveis de ambiente (opcional — os padrões já funcionam)
+cp .env.example .env
+
+# 3. Suba o sistema (banco + app)
+docker compose up --build
+```
+
+Acesse em: **http://localhost:3000**
+
+Para rodar em segundo plano: `docker compose up --build -d`  
+Para parar: `docker compose down`  
+Para parar e apagar os dados: `docker compose down -v`
+
+## Logins disponíveis
+
+| Usuário   | Senha       |
+|-----------|-------------|
+| Admin     | Adm1962     |
+| Gregory   | Greg01      |
+| Thales    | Thales02    |
+| Andrews   | Andrews03   |
+| Christian | Christian04 |
+| Heryc     | Heryc05     |
+
+## Desenvolvimento (Replit)
+
+- `pnpm --filter @workspace/api-server run dev` — API na porta 5000
+- `pnpm run typecheck` — typecheck completo
+- `pnpm run build` — typecheck + build
+- `pnpm --filter @workspace/api-spec run codegen` — regerar hooks e schemas da spec OpenAPI
+- `pnpm --filter @workspace/db run push` — aplicar schema no banco (dev)
+- Env obrigatório: `DATABASE_URL`, `SESSION_SECRET`
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
+- pnpm workspaces, Node.js 20, TypeScript 5
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Validação: Zod, drizzle-zod
+- Roteamento: wouter
+- PWA: manifest.json + service worker
 
-## Where things live
+## Onde estão os arquivos principais
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Frontend: `artifacts/atacadao/src/`
+- API: `artifacts/api-server/src/`
+- Schema do banco: `lib/db/src/schema/index.ts`
+- Spec OpenAPI: `lib/api-spec/`
+- Docker: `Dockerfile`, `docker-compose.yml`, `docker-start.sh`
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Idioma: Português brasileiro
+- Tema: vermelho Atacadão (`--primary: 354 78% 46%`)
+- Sempre subir para o GitHub após checkpoints: `bash scripts/push-github.sh "mensagem"`

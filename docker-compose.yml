@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atacadao
+      POSTGRES_USER: atacadao
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-atacadao123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atacadao"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://atacadao:${DB_PASSWORD:-atacadao123}@db:5432/atacadao
+      SESSION_SECRET: ${SESSION_SECRET:-mude-esta-chave-secreta-em-producao}
+      COOKIE_SECURE: "false"
+      STATIC_DIR: /app/public
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
