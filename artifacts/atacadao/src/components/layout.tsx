@@ -51,9 +51,9 @@ export function Layout({ children }: LayoutProps) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-primary text-primary-foreground">
-      <div className="p-6 border-b border-primary-foreground/20">
-        <h1 className="text-2xl font-bold tracking-tight uppercase">ATACADÃO</h1>
-        <p className="text-primary-foreground/80 text-sm mt-1 font-medium tracking-widest">Sistema de Armazém</p>
+      <div className="p-6 border-b border-primary-foreground/20 flex flex-col items-center gap-2">
+        <img src="/logo-atacadao.png" alt="Atacadão" className="h-12 object-contain brightness-0 invert" />
+        <p className="text-primary-foreground/80 text-sm font-medium tracking-widest">Sistema de Armazém</p>
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (
@@ -110,7 +110,7 @@ export function Layout({ children }: LayoutProps) {
                 <SidebarContent />
               </SheetContent>
             </Sheet>
-            <h1 className="text-xl font-bold tracking-tight">ATACADÃO</h1>
+            <img src="/logo-atacadao.png" alt="Atacadão" className="h-8 object-contain brightness-0 invert" />
           </div>
           <div className="h-8 w-8 rounded-full bg-white text-primary flex items-center justify-center font-bold">
             {user?.username?.charAt(0).toUpperCase()}

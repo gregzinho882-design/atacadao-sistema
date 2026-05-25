@@ -116,7 +116,7 @@ export default function Codigos() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Códigos de Balança</h1>
-          <p className="text-gray-500 font-medium mt-1">Consulte os códigos PLU para pesagem</p>
+          <p className="text-gray-500 font-medium mt-1">Consulte os códigos para pesagem</p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={(open) => {
@@ -131,7 +131,7 @@ export default function Codigos() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[400px]">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Adicionar Código PLU</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Adicionar Código</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">

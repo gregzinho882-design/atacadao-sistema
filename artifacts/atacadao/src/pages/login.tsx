@@ -60,11 +60,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary text-white rounded-full mb-4 shadow-lg">
-            <span className="text-3xl font-black tracking-tighter">A</span>
-          </div>
-          <h1 className="text-4xl font-black text-primary tracking-tight uppercase">ATACADÃO</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide mt-2">SISTEMA DE ARMAZÉM</p>
+          <img src="/logo-atacadao.png" alt="Atacadão" className="h-16 object-contain mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">SISTEMA DE ARMAZÉM</p>
         </div>
 
         <Card className="border-t-4 border-t-primary shadow-xl">
