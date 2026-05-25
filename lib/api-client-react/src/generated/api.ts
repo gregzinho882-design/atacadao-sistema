@@ -489,6 +489,78 @@ export const useCreateProductCode = <TError = ErrorType<unknown>,
       return useMutation(getCreateProductCodeMutationOptions(options));
     }
 
+export const getUpdateProductCodeUrl = (id: number,) => {
+
+
+
+
+  return `/api/product-codes/${id}`
+}
+
+/**
+ * @summary Update a product code
+ */
+export const updateProductCode = async (id: number,
+    productCodeInput: ProductCodeInput, options?: RequestInit): Promise<ProductCode> => {
+
+  return customFetch<ProductCode>(getUpdateProductCodeUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      productCodeInput,)
+  }
+);}
+
+
+
+
+export const getUpdateProductCodeMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductCode>>, TError,{id: number;data: BodyType<ProductCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProductCode>>, TError,{id: number;data: BodyType<ProductCodeInput>}, TContext> => {
+
+const mutationKey = ['updateProductCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProductCode>>, {id: number;data: BodyType<ProductCodeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProductCode(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProductCodeMutationResult = NonNullable<Awaited<ReturnType<typeof updateProductCode>>>
+    export type UpdateProductCodeMutationBody = BodyType<ProductCodeInput>
+    export type UpdateProductCodeMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a product code
+ */
+export const useUpdateProductCode = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductCode>>, TError,{id: number;data: BodyType<ProductCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProductCode>>,
+        TError,
+        {id: number;data: BodyType<ProductCodeInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateProductCodeMutationOptions(options));
+    }
+
 export const getDeleteProductCodeUrl = (id: number,) => {
 
 

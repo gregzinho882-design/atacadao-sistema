@@ -10,5 +10,7 @@ export interface ProductCode {
   id: number;
   code: string;
   productName: string;
+  /** @nullable */
+  location?: string | null;
   createdAt: string;
 }

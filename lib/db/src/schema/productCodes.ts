@@ -6,6 +6,7 @@ export const productCodesTable = pgTable("product_codes", {
   id: serial("id").primaryKey(),
   code: text("code").notNull(),
   productName: text("product_name").notNull(),
+  location: text("location"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

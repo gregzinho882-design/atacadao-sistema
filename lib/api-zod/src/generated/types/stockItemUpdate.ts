@@ -7,9 +7,11 @@
  */
 
 export interface StockItemUpdate {
+  palletNumber?: string;
   /** @minLength 1 */
   productName?: string;
   description?: string;
   /** @minLength 1 */
   location?: string;
+  expiryDate?: string;
 }

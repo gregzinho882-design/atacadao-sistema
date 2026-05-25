@@ -120,6 +120,35 @@ paths:
                 $ref: "#/components/schemas/ProductCode"
 
   /product-codes/{id}:
+    put:
+      operationId: updateProductCode
+      tags: [product-codes]
+      summary: Update a product code
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCodeInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductCode"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       operationId: deleteProductCode
       tags: [product-codes]
@@ -295,6 +324,8 @@ components:
           type: string
         productName:
           type: string
+        location:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -308,6 +339,8 @@ components:
         productName:
           type: string
           minLength: 1
+        location:
+          type: string
 
     StockItem:
       type: object
@@ -315,12 +348,16 @@ components:
       properties:
         id:
           type: integer
+        palletNumber:
+          type: ["string", "null"]
         productName:
           type: string
         description:
           type: ["string", "null"]
         location:
           type: string
+        expiryDate:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -330,6 +367,8 @@ components:
       type: object
       required: [productName, location]
       properties:
+        palletNumber:
+          type: string
         productName:
           type: string
           minLength: 1
@@ -338,10 +377,14 @@ components:
         location:
           type: string
           minLength: 1
+        expiryDate:
+          type: string
 
     StockItemUpdate:
       type: object
       properties:
+        palletNumber:
+          type: string
         productName:
           type: string
           minLength: 1
@@ -350,6 +393,8 @@ components:
         location:
           type: string
           minLength: 1
+        expiryDate:
+          type: string
 
     StockSummary:
       type: object

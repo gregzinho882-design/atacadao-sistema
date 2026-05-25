@@ -8,10 +8,14 @@
 
 export interface StockItem {
   id: number;
+  /** @nullable */
+  palletNumber?: string | null;
   productName: string;
   /** @nullable */
   description?: string | null;
   location: string;
+  /** @nullable */
+  expiryDate?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

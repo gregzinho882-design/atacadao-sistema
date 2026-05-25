@@ -30,6 +30,8 @@ export interface ProductCode {
   id: number;
   code: string;
   productName: string;
+  /** @nullable */
+  location?: string | null;
   createdAt: string;
 }
 
@@ -38,32 +40,41 @@ export interface ProductCodeInput {
   code: string;
   /** @minLength 1 */
   productName: string;
+  location?: string;
 }
 
 export interface StockItem {
   id: number;
+  /** @nullable */
+  palletNumber?: string | null;
   productName: string;
   /** @nullable */
   description?: string | null;
   location: string;
+  /** @nullable */
+  expiryDate?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
 
 export interface StockItemInput {
+  palletNumber?: string;
   /** @minLength 1 */
   productName: string;
   description?: string;
   /** @minLength 1 */
   location: string;
+  expiryDate?: string;
 }
 
 export interface StockItemUpdate {
+  palletNumber?: string;
   /** @minLength 1 */
   productName?: string;
   description?: string;
   /** @minLength 1 */
   location?: string;
+  expiryDate?: string;
 }
 
 export type StockSummaryLocationBreakdownItem = {

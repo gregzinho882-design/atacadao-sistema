@@ -53,6 +53,7 @@ export const ListProductCodesResponseItem = zod.object({
   "id": zod.number(),
   "code": zod.string(),
   "productName": zod.string(),
+  "location": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListProductCodesResponse = zod.array(ListProductCodesResponseItem)
@@ -67,7 +68,34 @@ export const ListProductCodesResponse = zod.array(ListProductCodesResponseItem)
 
 export const CreateProductCodeBody = zod.object({
   "code": zod.string().min(1),
-  "productName": zod.string().min(1)
+  "productName": zod.string().min(1),
+  "location": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a product code
+ */
+export const UpdateProductCodeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateProductCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "productName": zod.string().min(1),
+  "location": zod.string().optional()
+})
+
+export const UpdateProductCodeResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "productName": zod.string(),
+  "location": zod.string().nullish(),
+  "createdAt": zod.string()
 })
 
 
@@ -88,9 +116,11 @@ export const DeleteProductCodeResponse = zod.object({
  */
 export const ListStockItemsResponseItem = zod.object({
   "id": zod.number(),
+  "palletNumber": zod.string().nullish(),
   "productName": zod.string(),
   "description": zod.string().nullish(),
   "location": zod.string(),
+  "expiryDate": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -105,9 +135,11 @@ export const ListStockItemsResponse = zod.array(ListStockItemsResponseItem)
 
 
 export const CreateStockItemBody = zod.object({
+  "palletNumber": zod.string().optional(),
   "productName": zod.string().min(1),
   "description": zod.string().optional(),
-  "location": zod.string().min(1)
+  "location": zod.string().min(1),
+  "expiryDate": zod.string().optional()
 })
 
 
@@ -123,16 +155,20 @@ export const UpdateStockItemParams = zod.object({
 
 
 export const UpdateStockItemBody = zod.object({
+  "palletNumber": zod.string().optional(),
   "productName": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "location": zod.string().min(1).optional()
+  "location": zod.string().min(1).optional(),
+  "expiryDate": zod.string().optional()
 })
 
 export const UpdateStockItemResponse = zod.object({
   "id": zod.number(),
+  "palletNumber": zod.string().nullish(),
   "productName": zod.string(),
   "description": zod.string().nullish(),
   "location": zod.string(),
+  "expiryDate": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

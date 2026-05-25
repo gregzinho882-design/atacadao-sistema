@@ -11,4 +11,5 @@ export interface ProductCodeInput {
   code: string;
   /** @minLength 1 */
   productName: string;
+  location?: string;
 }
