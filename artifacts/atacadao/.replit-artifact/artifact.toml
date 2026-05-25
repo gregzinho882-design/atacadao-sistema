@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Atacadão"
+version = "1.0.0"
+id = "artifacts/atacadao"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21919
+
+[services.development]
+run = "pnpm --filter @workspace/atacadao run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/atacadao", "run", "build" ]
+publicDir = "artifacts/atacadao/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21919"
+BASE_PATH = "/"

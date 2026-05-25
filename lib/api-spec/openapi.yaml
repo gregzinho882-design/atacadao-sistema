@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Atacadão system
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: product-codes
+    description: Product codes for scales
+  - name: stock-items
+    description: Stock items with locations
 paths:
   /healthz:
     get:
@@ -24,6 +29,220 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /product-codes:
+    get:
+      operationId: listProductCodes
+      tags: [product-codes]
+      summary: List all product codes
+      responses:
+        "200":
+          description: List of product codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductCode"
+    post:
+      operationId: createProductCode
+      tags: [product-codes]
+      summary: Create a product code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCodeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductCode"
+
+  /product-codes/{id}:
+    delete:
+      operationId: deleteProductCode
+      tags: [product-codes]
+      summary: Delete a product code
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stock-items:
+    get:
+      operationId: listStockItems
+      tags: [stock-items]
+      summary: List all stock items
+      responses:
+        "200":
+          description: List of stock items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockItem"
+    post:
+      operationId: createStockItem
+      tags: [stock-items]
+      summary: Create a stock item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItem"
+
+  /stock-items/{id}:
+    put:
+      operationId: updateStockItem
+      tags: [stock-items]
+      summary: Update a stock item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItem"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteStockItem
+      tags: [stock-items]
+      summary: Delete a stock item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stock-items/summary:
+    get:
+      operationId: getStockSummary
+      tags: [stock-items]
+      summary: Get stock summary stats
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +253,119 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+
+    ProductCode:
+      type: object
+      required: [id, code, productName, createdAt]
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        productName:
+          type: string
+        createdAt:
+          type: string
+
+    ProductCodeInput:
+      type: object
+      required: [code, productName]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        productName:
+          type: string
+          minLength: 1
+
+    StockItem:
+      type: object
+      required: [id, productName, location, createdAt]
+      properties:
+        id:
+          type: integer
+        productName:
+          type: string
+        description:
+          type: ["string", "null"]
+        location:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    StockItemInput:
+      type: object
+      required: [productName, location]
+      properties:
+        productName:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        location:
+          type: string
+          minLength: 1
+
+    StockItemUpdate:
+      type: object
+      properties:
+        productName:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        location:
+          type: string
+          minLength: 1
+
+    StockSummary:
+      type: object
+      required: [totalItems, totalCodes, locationBreakdown]
+      properties:
+        totalItems:
+          type: integer
+        totalCodes:
+          type: integer
+        locationBreakdown:
+          type: array
+          items:
+            type: object
+            required: [location, count]
+            properties:
+              location:
+                type: string
+              count:
+                type: integer
