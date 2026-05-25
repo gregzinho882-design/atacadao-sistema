@@ -61,7 +61,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/logo-atacadao.png" alt="Atacadão" className="h-16 object-contain mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">SISTEMA DE ARMAZÉM</p>
+          <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">SISTEMA DOS FRIOS</p>
         </div>
 
         <Card className="border-t-4 border-t-primary shadow-xl">

@@ -3,8 +3,14 @@ import { LoginBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-const ADMIN_USERNAME = "Admin";
-const ADMIN_PASSWORD = "Adm1962";
+const USERS: Record<string, string> = {
+  Admin: "Adm1962",
+  Gregory: "Greg01",
+  Thales: "Thales02",
+  Andrews: "Andrews03",
+  Christian: "Christian04",
+  Heryc: "Heryc05",
+};
 
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
@@ -14,14 +20,15 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const { username, password } = parsed.data;
+  const validPassword = USERS[username];
 
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+  if (!validPassword || password !== validPassword) {
     res.status(401).json({ error: "Usuário ou senha inválidos" });
     return;
   }
 
-  (req.session as any).user = { username: ADMIN_USERNAME };
-  res.json({ username: ADMIN_USERNAME });
+  (req.session as any).user = { username };
+  res.json({ username });
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {
