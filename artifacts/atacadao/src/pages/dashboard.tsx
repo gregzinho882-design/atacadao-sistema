@@ -9,21 +9,7 @@ import {
   Calendar, TrendingUp, Thermometer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-function parseExpiry(expiryDate: string): Date | null {
-  const parts = expiryDate.split("/");
-  if (parts.length !== 2) return null;
-  const month = parseInt(parts[0], 10);
-  const year = parseInt(parts[1], 10);
-  if (isNaN(month) || isNaN(year)) return null;
-  return new Date(year, month - 1, 1);
-}
-
-function getDaysUntil(date: Date): number {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { parseExpiry, getDaysUntil } from "@/lib/expiry";
 
 export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetStockSummary();
@@ -45,6 +31,15 @@ export default function Dashboard() {
       })
       .sort((a, b) => a.daysLeft - b.daysLeft)
       .slice(0, 5);
+  }, [items]);
+
+  const totalExpiringCount = useMemo(() => {
+    if (!items) return 0;
+    return items.filter((item) => {
+      if (!item.expiryDate) return false;
+      const date = parseExpiry(item.expiryDate);
+      return date ? getDaysUntil(date) <= 30 : false;
+    }).length;
   }, [items]);
 
   const greeting = () => {
@@ -159,7 +154,7 @@ export default function Dashboard() {
                   <p className="font-bold text-sm truncate text-gray-900 dark:text-white">{item.productName}</p>
                   <p className="text-xs text-gray-500">{item.location}</p>
                 </div>
-                <div className={`text-right shrink-0`}>
+                <div className="text-right shrink-0">
                   <p className={`text-xs font-black ${
                     item.daysLeft <= 0 ? "text-red-600" :
                     item.daysLeft <= 7 ? "text-amber-600" : "text-yellow-600"
@@ -172,14 +167,10 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {(items?.filter(i => {
-              if (!i.expiryDate) return false;
-              const d = parseExpiry(i.expiryDate);
-              return d ? getDaysUntil(d) <= 30 : false;
-            }).length ?? 0) > 5 && (
+            {totalExpiringCount > 5 && (
               <Link href="/estoque">
                 <Button variant="outline" className="w-full h-10 font-bold text-sm border-2 mt-1">
-                  Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                  Ver todos ({totalExpiringCount}) <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             )}
@@ -201,7 +192,7 @@ export default function Dashboard() {
         ) : summary?.locationBreakdown && summary.locationBreakdown.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {summary.locationBreakdown.map((loc) => (
-              <Link key={loc.location} href={`/estoque`}>
+              <Link key={loc.location} href="/estoque">
                 <div className="bg-white dark:bg-zinc-900 border-2 border-gray-100 dark:border-zinc-800 hover:border-primary/40 rounded-xl px-5 py-4 flex items-center gap-4 transition-all cursor-pointer shadow-sm group">
                   <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-inner">
                     <span className="text-white font-black text-lg">{loc.count}</span>

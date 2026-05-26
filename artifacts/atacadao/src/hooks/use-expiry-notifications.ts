@@ -1,20 +1,6 @@
 import { useEffect } from "react";
 import { useListStockItems } from "@workspace/api-client-react";
-
-function parseExpiry(expiryDate: string): Date | null {
-  const parts = expiryDate.split("/");
-  if (parts.length !== 2) return null;
-  const month = parseInt(parts[0], 10);
-  const year = parseInt(parts[1], 10);
-  if (isNaN(month) || isNaN(year)) return null;
-  return new Date(year, month - 1, 1);
-}
-
-function getDaysUntil(date: Date): number {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { parseExpiry, getDaysUntil } from "@/lib/expiry";
 
 export function useExpiryNotifications() {
   const { data: items } = useListStockItems();
@@ -31,8 +17,7 @@ export function useExpiryNotifications() {
         if (!item.expiryDate) return false;
         const date = parseExpiry(item.expiryDate);
         if (!date) return false;
-        const days = getDaysUntil(date);
-        return days <= 30;
+        return getDaysUntil(date) <= 30;
       })
       .map((item) => {
         const date = parseExpiry(item.expiryDate!)!;

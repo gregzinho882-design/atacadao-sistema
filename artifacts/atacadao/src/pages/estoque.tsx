@@ -10,12 +10,14 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useExpiryNotifications } from "@/hooks/use-expiry-notifications";
+import { parseExpiry, getDaysUntil, getExpiryStatus } from "@/lib/expiry";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus, Search, MapPin, Package, Edit, Trash2, FileText,
-  Loader2, Hash, Calendar, ChevronsDown, ChevronsUp, AlertTriangle, Filter
+  Loader2, Hash, Calendar, ChevronsDown, ChevronsUp, AlertTriangle,
+  SlidersHorizontal, X, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,25 +46,11 @@ const stockItemSchema = z.object({
 
 type StockItemFormValues = z.infer<typeof stockItemSchema>;
 
-function parseExpiry(expiryDate: string): Date | null {
-  const parts = expiryDate.split("/");
-  if (parts.length !== 2) return null;
-  const month = parseInt(parts[0], 10);
-  const year = parseInt(parts[1], 10);
-  if (isNaN(month) || isNaN(year)) return null;
-  return new Date(year, month - 1, 1);
-}
-
-function getExpiryStatus(expiryDate: string | null | undefined): "expired" | "soon" | "ok" | null {
-  if (!expiryDate) return null;
-  const date = parseExpiry(expiryDate);
-  if (!date) return null;
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return "expired";
-  if (diffDays <= 30) return "soon";
-  return "ok";
+function maskDate(value: string): string {
+  let v = value.replace(/\D/g, "");
+  if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2);
+  if (v.length >= 6) v = v.slice(0, 5) + "/" + v.slice(5, 7);
+  return v.slice(0, 8);
 }
 
 function StockForm({
@@ -93,12 +81,12 @@ function StockForm({
             <FormItem>
               <FormLabel className="text-sm font-bold uppercase text-gray-600">Validade</FormLabel>
               <FormControl>
-                <Input placeholder="MM/AAAA" className="h-12 text-base font-mono" maxLength={7} {...field}
-                  onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, "");
-                    if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2, 6);
-                    field.onChange(v);
-                  }}
+                <Input
+                  placeholder="DD/MM/AA"
+                  className="h-12 text-base font-mono"
+                  maxLength={8}
+                  {...field}
+                  onChange={(e) => field.onChange(maskDate(e.target.value))}
                 />
               </FormControl>
               <FormMessage />
@@ -142,11 +130,12 @@ function StockForm({
 
 export default function Estoque() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [locationFilter, setLocationFilter] = useState<string | null>(null);
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+  const [filterOpen, setFilterOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -199,6 +188,17 @@ export default function Estoque() {
     }
   };
 
+  const toggleLocation = (loc: string) => {
+    setSelectedLocations(prev => {
+      const next = new Set(prev);
+      if (next.has(loc)) next.delete(loc);
+      else next.add(loc);
+      return next;
+    });
+  };
+
+  const clearFilters = () => setSelectedLocations(new Set());
+
   const uniqueLocations = useMemo(() => {
     if (!items) return [];
     return Array.from(new Set(items.map((i) => i.location))).sort();
@@ -218,13 +218,15 @@ export default function Estoque() {
         item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.palletNumber ?? "").toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesLocation = !locationFilter || item.location === locationFilter;
+      const matchesLocation = selectedLocations.size === 0 || selectedLocations.has(item.location);
       return matchesSearch && matchesLocation;
     });
-  }, [items, searchTerm, locationFilter]);
+  }, [items, searchTerm, selectedLocations]);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+
+  const hasActiveFilters = selectedLocations.size > 0;
 
   return (
     <Layout>
@@ -248,12 +250,12 @@ export default function Estoque() {
         </Dialog>
       </div>
 
-      {/* Expiry alert */}
+      {/* Expiry alert banner */}
       {expiringCount > 0 && (
         <div className="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 mb-4 text-amber-800">
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
           <p className="text-sm font-semibold">
-            {expiringCount} palete{expiringCount > 1 ? "s" : ""} com validade próxima ou vencida. Confira abaixo.
+            {expiringCount} palete{expiringCount > 1 ? "s" : ""} com validade próxima ou vencida.
           </p>
         </div>
       )}
@@ -284,43 +286,98 @@ export default function Estoque() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Search */}
-      <div className="relative mb-3">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-        <Input
-          placeholder="Buscar por produto, palete ou localização..."
-          className="pl-12 h-13 text-base rounded-xl shadow-sm border-2 focus-visible:ring-primary"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Search + Filter row */}
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            placeholder="Buscar produto, palete ou câmara..."
+            className="pl-12 h-12 text-base rounded-xl shadow-sm border-2 focus-visible:ring-primary"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Filter dropdown button */}
+        {uniqueLocations.length > 1 && (
+          <div className="relative" ref={filterRef}>
+            <Button
+              variant="outline"
+              className={`h-12 px-4 border-2 font-bold gap-2 shrink-0 ${hasActiveFilters ? "border-primary text-primary bg-primary/5" : ""}`}
+              onClick={() => setFilterOpen(o => !o)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">Filtrar</span>
+              {hasActiveFilters && (
+                <span className="bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-black">
+                  {selectedLocations.size}
+                </span>
+              )}
+              <ChevronDown className={`h-4 w-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+            </Button>
+
+            {/* Dropdown panel */}
+            {filterOpen && (
+              <div className="absolute right-0 top-14 z-30 bg-white dark:bg-zinc-900 border-2 border-gray-200 dark:border-zinc-700 rounded-2xl shadow-xl w-72 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-black text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" /> Câmaras Frias
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {hasActiveFilters && (
+                      <button onClick={clearFilters} className="text-xs text-primary font-bold hover:underline flex items-center gap-1">
+                        <X className="h-3 w-3" /> Limpar
+                      </button>
+                    )}
+                    <button onClick={() => setFilterOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {uniqueLocations.map((loc) => {
+                    const checked = selectedLocations.has(loc);
+                    const count = (items ?? []).filter(i => i.location === loc).length;
+                    return (
+                      <label key={loc} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                        checked ? "bg-primary/10 text-primary" : "hover:bg-gray-50 dark:hover:bg-zinc-800"
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleLocation(loc)}
+                          className="h-4 w-4 accent-primary shrink-0"
+                        />
+                        <span className="flex-1 text-sm font-semibold truncate">{loc}</span>
+                        <span className="text-xs font-bold bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400 rounded-full px-2 py-0.5 shrink-0">
+                          {count}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <Button
+                  className="w-full h-10 font-bold mt-3"
+                  onClick={() => setFilterOpen(false)}
+                >
+                  Aplicar ({filteredItems.length} resultado{filteredItems.length !== 1 ? "s" : ""})
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Location filter chips */}
-      {uniqueLocations.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-4 items-center">
-          <Filter className="h-4 w-4 text-gray-400 shrink-0" />
-          <button
-            onClick={() => setLocationFilter(null)}
-            className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
-              locationFilter === null
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-gray-600 border-gray-200 hover:border-primary/50"
-            }`}
-          >
-            Todas
-          </button>
-          {uniqueLocations.map((loc) => (
-            <button
-              key={loc}
-              onClick={() => setLocationFilter(locationFilter === loc ? null : loc)}
-              className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
-                locationFilter === loc
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-primary/50"
-              }`}
-            >
+      {/* Active filter badges */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {Array.from(selectedLocations).map(loc => (
+            <span key={loc} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full border border-primary/30">
               {loc}
-            </button>
+              <button onClick={() => toggleLocation(loc)} className="ml-1 hover:text-primary/60">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
           ))}
         </div>
       )}
@@ -342,7 +399,7 @@ export default function Estoque() {
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
         </div>
       ) : filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3" ref={listRef}>
+        <div className="grid grid-cols-1 gap-3">
           {filteredItems.map((item) => {
             const expiryStatus = getExpiryStatus(item.expiryDate);
             const borderColor =
@@ -356,7 +413,7 @@ export default function Estoque() {
                     {/* Location column */}
                     <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 flex flex-col justify-center items-center md:w-52 shrink-0 border-b md:border-b-0 md:border-r-2 border-dashed gap-1">
                       <MapPin className="h-6 w-6 text-primary" />
-                      <Badge variant="outline" className="text-sm px-2 py-0.5 font-mono font-bold bg-white dark:bg-gray-900 border-2 text-center whitespace-normal break-words max-w-full">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5 font-bold bg-white dark:bg-gray-900 border-2 text-center whitespace-normal break-words max-w-full">
                         {item.location}
                       </Badge>
                       {item.palletNumber && (
@@ -378,8 +435,9 @@ export default function Estoque() {
                           expiryStatus === "soon" ? "text-amber-600" :
                           "text-green-600"
                         }`}>
-                          {expiryStatus === "expired" && <AlertTriangle className="h-3.5 w-3.5" />}
-                          {expiryStatus !== "expired" && <Calendar className="h-3.5 w-3.5" />}
+                          {expiryStatus === "expired"
+                            ? <AlertTriangle className="h-3.5 w-3.5" />
+                            : <Calendar className="h-3.5 w-3.5" />}
                           {expiryStatus === "expired" ? "VENCIDO: " : "Validade: "}
                           {item.expiryDate}
                         </p>
