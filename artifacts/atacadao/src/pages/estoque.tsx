@@ -229,7 +229,7 @@ export default function Estoque() {
   const hasActiveFilters = selectedLocations.size > 0;
 
   return (
-    <Layout>
+    <Layout fab={{ label: "Novo Palete", onClick: () => setIsAddOpen(true) }}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Estoque</h1>

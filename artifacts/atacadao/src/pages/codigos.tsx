@@ -144,7 +144,7 @@ export default function Codigos() {
   ) || [];
 
   return (
-    <Layout>
+    <Layout fab={{ label: "Novo Código", onClick: () => setIsAddOpen(true) }}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Códigos de Balança</h1>

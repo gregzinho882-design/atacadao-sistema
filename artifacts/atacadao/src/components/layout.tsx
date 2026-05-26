@@ -1,16 +1,22 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Package, Hash, LogOut, LayoutDashboard, Loader2, WifiOff } from "lucide-react";
+import { Package, Hash, LogOut, LayoutDashboard, Loader2, WifiOff, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLogout, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOffline } from "@/hooks/use-offline";
 
-interface LayoutProps {
-  children: React.ReactNode;
+interface FabAction {
+  label: string;
+  onClick: () => void;
 }
 
-export function Layout({ children }: LayoutProps) {
+interface LayoutProps {
+  children: React.ReactNode;
+  fab?: FabAction;
+}
+
+export function Layout({ children, fab }: LayoutProps) {
   const [location, setLocation] = useLocation();
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();
@@ -129,6 +135,18 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
+
+      {/* ── Mobile FAB ── */}
+      {fab && (
+        <button
+          onClick={fab.onClick}
+          className="md:hidden fixed bottom-20 right-4 z-30 flex items-center gap-2 bg-primary text-white font-black text-sm px-5 h-14 rounded-full shadow-lg shadow-primary/40 active:scale-95 transition-transform"
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <Plus className="h-5 w-5 shrink-0" strokeWidth={3} />
+          {fab.label}
+        </button>
+      )}
 
       {/* ── Mobile Bottom Navigation Bar ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-700 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
