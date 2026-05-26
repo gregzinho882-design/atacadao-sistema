@@ -66,18 +66,6 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="hidden md:flex flex-col gap-3 mt-6 w-full max-w-xs">
-          {[
-            { icon: "📦", text: "Controle de Paletes e Estoque" },
-            { icon: "🏷️", text: "Códigos de Balança Rápidos" },
-            { icon: "📱", text: "Funciona no celular (PWA)" },
-          ].map((item) => (
-            <div key={item.text} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-white/90 text-sm font-medium">{item.text}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Right panel — form */}
