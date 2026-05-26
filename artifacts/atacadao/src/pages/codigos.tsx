@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Search, Hash, Trash2, Edit, MapPin, Loader2 } from "lucide-react";
+import { Plus, Search, Trash2, Edit, MapPin, Loader2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,7 +53,12 @@ function CodeForm({
           <FormItem>
             <FormLabel className="text-sm font-bold uppercase text-gray-600">Código</FormLabel>
             <FormControl>
-              <Input placeholder="Ex: 1042" className="h-12 text-base font-mono" {...field} />
+              <Input
+                placeholder="Ex: 1042"
+                inputMode="numeric"
+                className="h-12 text-xl font-black font-mono tracking-widest"
+                {...field}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -143,7 +148,9 @@ export default function Codigos() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Códigos de Balança</h1>
-          <p className="text-gray-500 font-medium mt-1">Consulte os códigos para pesagem</p>
+          <p className="text-gray-500 font-medium mt-1">
+            {codes ? `${codes.length} código${codes.length !== 1 ? "s" : ""} cadastrado${codes.length !== 1 ? "s" : ""}` : "Consulte os códigos para pesagem"}
+          </p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={(open) => { if (!open) form.reset(); setIsAddOpen(open); }}>
           <DialogTrigger asChild>
@@ -179,53 +186,77 @@ export default function Codigos() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="h-11 font-bold">CANCELAR</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-11 font-bold">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 h-11 font-bold"
+            >
               {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "REMOVER"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="relative mb-4">
+      {/* Search */}
+      <div className="relative mb-5">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
         <Input
           placeholder="Buscar por código, produto ou localização..."
           className="pl-12 h-12 text-base rounded-xl shadow-sm border-2 focus-visible:ring-primary"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          inputMode="search"
         />
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[72px] w-full rounded-2xl" />)}
         </div>
       ) : filteredCodes.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {filteredCodes.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 bg-white dark:bg-zinc-900 border-2 border-gray-100 dark:border-zinc-800 rounded-xl px-4 py-3 hover:border-primary/40 transition-colors shadow-sm">
-              {/* Code badge */}
-              <div className="flex-shrink-0 w-16 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-black text-sm font-mono tracking-tight">{item.code}</span>
+            <div
+              key={item.id}
+              className="group flex items-center gap-4 bg-white dark:bg-zinc-900 border-2 border-gray-100 dark:border-zinc-800 rounded-2xl px-4 py-3 hover:border-primary/30 hover:shadow-md transition-all"
+            >
+              {/* Code number pill */}
+              <div className="shrink-0 min-w-[64px] h-12 rounded-xl bg-primary flex items-center justify-center shadow-sm px-3">
+                <span className="text-white font-black text-xl font-mono leading-none tracking-tight">
+                  {item.code}
+                </span>
               </div>
 
               {/* Product info */}
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate">{item.productName}</p>
-                {item.location && (
-                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
-                    <MapPin className="h-3 w-3 shrink-0 text-primary" />
+                <p className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight truncate">
+                  {item.productName}
+                </p>
+                {item.location ? (
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 flex items-center gap-1 mt-1 truncate">
+                    <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
                     {item.location}
                   </p>
+                ) : (
+                  <p className="text-xs text-gray-300 dark:text-zinc-600 mt-1">Sem localização</p>
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-1.5 shrink-0">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-primary" onClick={() => handleEdit(item)}>
+              {/* Actions — visible on hover (desktop) or always (mobile) */}
+              <div className="flex gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl text-gray-500 hover:text-primary hover:bg-primary/10"
+                  onClick={() => handleEdit(item)}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-destructive" onClick={() => setDeletingId(item.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl text-gray-500 hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setDeletingId(item.id)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -233,10 +264,19 @@ export default function Codigos() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-gray-50 dark:bg-gray-900/30 rounded-xl border-2 border-dashed">
-          <Hash className="h-14 w-14 text-gray-300 mx-auto mb-3" />
+        <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/30 rounded-2xl border-2 border-dashed">
+          <div className="h-16 w-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <Tag className="h-8 w-8 text-gray-300 dark:text-zinc-600" />
+          </div>
           <h3 className="text-lg font-bold text-gray-500">Nenhum código encontrado</h3>
-          <p className="text-gray-400 mt-1">Tente outro termo ou adicione um novo código.</p>
+          <p className="text-gray-400 mt-1 text-sm">
+            {searchTerm ? "Tente outro termo de busca." : "Adicione o primeiro código de balança."}
+          </p>
+          {!searchTerm && (
+            <Button className="mt-5 font-bold" onClick={() => setIsAddOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Adicionar Código
+            </Button>
+          )}
         </div>
       )}
     </Layout>
