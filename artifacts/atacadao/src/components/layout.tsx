@@ -1,9 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Package, Hash, LogOut, LayoutDashboard, Loader2 } from "lucide-react";
+import { Package, Hash, LogOut, LayoutDashboard, Loader2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLogout, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useOffline } from "@/hooks/use-offline";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export function Layout({ children }: LayoutProps) {
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useGetMe();
+  const isOffline = useOffline();
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
@@ -101,6 +103,7 @@ export function Layout({ children }: LayoutProps) {
       <header className="md:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground shadow-md">
         <img src="/logo-atacadao.png" alt="Atacadão" className="h-8 object-contain" />
         <div className="flex items-center gap-2">
+          {isOffline && <WifiOff className="h-4 w-4 text-white/70" />}
           <span className="text-sm font-semibold text-primary-foreground/90">{user?.username}</span>
           <div className="h-8 w-8 rounded-full bg-white text-primary flex items-center justify-center font-bold text-sm">
             {user?.username?.charAt(0).toUpperCase()}
@@ -108,9 +111,19 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
+      {/* ── Offline Banner ── */}
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-50 md:left-72">
+          <div className="bg-amber-500 text-white text-center text-sm font-bold py-2 px-4 flex items-center justify-center gap-2 shadow-md">
+            <WifiOff className="h-4 w-4 shrink-0" />
+            Sem conexão — mostrando dados salvos
+          </div>
+        </div>
+      )}
+
       {/* ── Main Content ── */}
       <div className="flex-1 flex flex-col md:pl-72 w-full max-w-full">
-        <main className="flex-1 pt-16 pb-24 px-4 md:pt-0 md:pb-0 md:p-8 overflow-x-hidden">
+        <main className={`flex-1 pb-24 px-4 md:pb-0 md:p-8 overflow-x-hidden ${isOffline ? "pt-24 md:pt-10" : "pt-16 md:pt-0"}`}>
           <div className="mx-auto max-w-5xl">
             {children}
           </div>

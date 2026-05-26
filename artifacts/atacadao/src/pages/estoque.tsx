@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { Layout } from "@/components/layout";
 import {
   useListStockItems,
@@ -9,12 +9,13 @@ import {
   getGetStockSummaryQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useExpiryNotifications } from "@/hooks/use-expiry-notifications";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus, Search, MapPin, Package, Edit, Trash2, FileText,
-  Loader2, Hash, Calendar, ChevronsDown, ChevronsUp
+  Loader2, Hash, Calendar, ChevronsDown, ChevronsUp, AlertTriangle, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,27 @@ const stockItemSchema = z.object({
 });
 
 type StockItemFormValues = z.infer<typeof stockItemSchema>;
+
+function parseExpiry(expiryDate: string): Date | null {
+  const parts = expiryDate.split("/");
+  if (parts.length !== 2) return null;
+  const month = parseInt(parts[0], 10);
+  const year = parseInt(parts[1], 10);
+  if (isNaN(month) || isNaN(year)) return null;
+  return new Date(year, month - 1, 1);
+}
+
+function getExpiryStatus(expiryDate: string | null | undefined): "expired" | "soon" | "ok" | null {
+  if (!expiryDate) return null;
+  const date = parseExpiry(expiryDate);
+  if (!date) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return "expired";
+  if (diffDays <= 30) return "soon";
+  return "ok";
+}
 
 function StockForm({
   form,
@@ -94,7 +116,7 @@ function StockForm({
         )} />
         <FormField control={form.control} name="location" render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-bold uppercase text-gray-600">Localização</FormLabel>
+            <FormLabel className="text-sm font-bold uppercase text-gray-600">Câmara / Localização</FormLabel>
             <FormControl>
               <Input placeholder="Ex: Câmara Fria Carnes - Seção A" className="h-12 text-base" {...field} />
             </FormControl>
@@ -120,6 +142,7 @@ function StockForm({
 
 export default function Estoque() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -132,6 +155,8 @@ export default function Estoque() {
   const createMutation = useCreateStockItem();
   const updateMutation = useUpdateStockItem();
   const deleteMutation = useDeleteStockItem();
+
+  useExpiryNotifications();
 
   const form = useForm<StockItemFormValues>({
     resolver: zodResolver(stockItemSchema),
@@ -174,17 +199,32 @@ export default function Estoque() {
     }
   };
 
-  const filteredItems = items?.filter(item =>
-    item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.palletNumber ?? "").toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const uniqueLocations = useMemo(() => {
+    if (!items) return [];
+    return Array.from(new Set(items.map((i) => i.location))).sort();
+  }, [items]);
 
-  const scrollTop = () => listRef.current?.scrollIntoView({ behavior: "smooth" });
-  const scrollBottom = () => {
-    const el = listRef.current;
-    if (el) el.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-  };
+  const expiringCount = useMemo(() => {
+    if (!items) return 0;
+    return items.filter((i) => {
+      const s = getExpiryStatus(i.expiryDate);
+      return s === "expired" || s === "soon";
+    }).length;
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    return (items ?? []).filter(item => {
+      const matchesSearch =
+        item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.palletNumber ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLocation = !locationFilter || item.location === locationFilter;
+      return matchesSearch && matchesLocation;
+    });
+  }, [items, searchTerm, locationFilter]);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const scrollToBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 
   return (
     <Layout>
@@ -207,6 +247,16 @@ export default function Estoque() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Expiry alert */}
+      {expiringCount > 0 && (
+        <div className="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 mb-4 text-amber-800">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+          <p className="text-sm font-semibold">
+            {expiringCount} palete{expiringCount > 1 ? "s" : ""} com validade próxima ou vencida. Confira abaixo.
+          </p>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
@@ -234,7 +284,8 @@ export default function Estoque() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="relative mb-4">
+      {/* Search */}
+      <div className="relative mb-3">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
         <Input
           placeholder="Buscar por produto, palete ou localização..."
@@ -244,13 +295,43 @@ export default function Estoque() {
         />
       </div>
 
+      {/* Location filter chips */}
+      {uniqueLocations.length > 1 && (
+        <div className="flex flex-wrap gap-2 mb-4 items-center">
+          <Filter className="h-4 w-4 text-gray-400 shrink-0" />
+          <button
+            onClick={() => setLocationFilter(null)}
+            className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
+              locationFilter === null
+                ? "bg-primary text-white border-primary"
+                : "bg-white text-gray-600 border-gray-200 hover:border-primary/50"
+            }`}
+          >
+            Todas
+          </button>
+          {uniqueLocations.map((loc) => (
+            <button
+              key={loc}
+              onClick={() => setLocationFilter(locationFilter === loc ? null : loc)}
+              className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
+                locationFilter === loc
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-primary/50"
+              }`}
+            >
+              {loc}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Scroll buttons */}
-      {filteredItems.length > 3 && (
+      {filteredItems.length > 5 && (
         <div className="flex gap-2 mb-4 justify-end">
-          <Button variant="outline" size="sm" onClick={scrollTop} className="gap-1 text-xs font-bold">
+          <Button variant="outline" size="sm" onClick={scrollToTop} className="gap-1 text-xs font-bold">
             <ChevronsUp className="h-4 w-4" /> Início
           </Button>
-          <Button variant="outline" size="sm" onClick={scrollBottom} className="gap-1 text-xs font-bold">
+          <Button variant="outline" size="sm" onClick={scrollToBottom} className="gap-1 text-xs font-bold">
             <ChevronsDown className="h-4 w-4" /> Fim
           </Button>
         </div>
@@ -262,57 +343,71 @@ export default function Estoque() {
         </div>
       ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 gap-3" ref={listRef}>
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors shadow-sm">
-              <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row">
-                  {/* Location column */}
-                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 flex flex-col justify-center items-center md:w-52 shrink-0 border-b md:border-b-0 md:border-r-2 border-dashed gap-1">
-                    <MapPin className="h-6 w-6 text-primary" />
-                    <Badge variant="outline" className="text-sm px-2 py-0.5 font-mono font-bold bg-white dark:bg-gray-900 border-2 text-center whitespace-normal break-words max-w-full">
-                      {item.location}
-                    </Badge>
-                    {item.palletNumber && (
-                      <span className="text-xs font-bold text-gray-500 flex items-center gap-1 mt-0.5">
-                        <Hash className="h-3 w-3" /> Palete {item.palletNumber}
-                      </span>
-                    )}
-                  </div>
+          {filteredItems.map((item) => {
+            const expiryStatus = getExpiryStatus(item.expiryDate);
+            const borderColor =
+              expiryStatus === "expired" ? "border-red-400 hover:border-red-500" :
+              expiryStatus === "soon" ? "border-amber-400 hover:border-amber-500" :
+              "border-gray-100 hover:border-primary/50";
+            return (
+              <Card key={item.id} className={`overflow-hidden border-2 transition-colors shadow-sm ${borderColor}`}>
+                <CardContent className="p-0">
+                  <div className="flex flex-col md:flex-row">
+                    {/* Location column */}
+                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 flex flex-col justify-center items-center md:w-52 shrink-0 border-b md:border-b-0 md:border-r-2 border-dashed gap-1">
+                      <MapPin className="h-6 w-6 text-primary" />
+                      <Badge variant="outline" className="text-sm px-2 py-0.5 font-mono font-bold bg-white dark:bg-gray-900 border-2 text-center whitespace-normal break-words max-w-full">
+                        {item.location}
+                      </Badge>
+                      {item.palletNumber && (
+                        <span className="text-xs font-bold text-gray-500 flex items-center gap-1 mt-0.5">
+                          <Hash className="h-3 w-3" /> Palete {item.palletNumber}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Content */}
-                  <div className="px-4 py-3 flex-1 flex flex-col justify-center gap-1">
-                    <h3 className="text-base font-bold flex items-center gap-2">
-                      <Package className="h-4 w-4 text-gray-400 shrink-0" />
-                      {item.productName}
-                    </h3>
-                    {item.expiryDate && (
-                      <p className="text-sm text-amber-600 font-semibold flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" /> Validade: {item.expiryDate}
-                      </p>
-                    )}
-                    {item.description && (
-                      <p className="text-sm text-gray-500 flex items-start gap-1">
-                        <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
+                    {/* Content */}
+                    <div className="px-4 py-3 flex-1 flex flex-col justify-center gap-1">
+                      <h3 className="text-base font-bold flex items-center gap-2">
+                        <Package className="h-4 w-4 text-gray-400 shrink-0" />
+                        {item.productName}
+                      </h3>
+                      {item.expiryDate && (
+                        <p className={`text-sm font-semibold flex items-center gap-1 ${
+                          expiryStatus === "expired" ? "text-red-600" :
+                          expiryStatus === "soon" ? "text-amber-600" :
+                          "text-green-600"
+                        }`}>
+                          {expiryStatus === "expired" && <AlertTriangle className="h-3.5 w-3.5" />}
+                          {expiryStatus !== "expired" && <Calendar className="h-3.5 w-3.5" />}
+                          {expiryStatus === "expired" ? "VENCIDO: " : "Validade: "}
+                          {item.expiryDate}
+                        </p>
+                      )}
+                      {item.description && (
+                        <p className="text-sm text-gray-500 flex items-start gap-1">
+                          <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
 
-                  {/* Actions */}
-                  <div className="px-3 py-3 bg-gray-50 dark:bg-gray-900/50 flex flex-row md:flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-800 shrink-0">
-                    <Button variant="secondary" size="sm" className="h-9 font-bold" onClick={() => handleEdit(item)}>
-                      <Edit className="h-4 w-4 md:mr-1" />
-                      <span className="hidden md:inline">EDITAR</span>
-                    </Button>
-                    <Button variant="destructive" size="sm" className="h-9 font-bold" onClick={() => setDeletingId(item.id)}>
-                      <Trash2 className="h-4 w-4 md:mr-1" />
-                      <span className="hidden md:inline">EXCLUIR</span>
-                    </Button>
+                    {/* Actions */}
+                    <div className="px-3 py-3 bg-gray-50 dark:bg-gray-900/50 flex flex-row md:flex-col justify-end gap-2 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-800 shrink-0">
+                      <Button variant="secondary" size="sm" className="h-9 font-bold" onClick={() => handleEdit(item)}>
+                        <Edit className="h-4 w-4 md:mr-1" />
+                        <span className="hidden md:inline">EDITAR</span>
+                      </Button>
+                      <Button variant="destructive" size="sm" className="h-9 font-bold" onClick={() => setDeletingId(item.id)}>
+                        <Trash2 className="h-4 w-4 md:mr-1" />
+                        <span className="hidden md:inline">EXCLUIR</span>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-16 bg-gray-50 dark:bg-gray-900/30 rounded-xl border-2 border-dashed">
